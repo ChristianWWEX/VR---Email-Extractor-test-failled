@@ -1,0 +1,104 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LTL Linear Feet Calculator</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { color: #333; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    input[type="number"] { width: 80px; }
+    input[type="checkbox"] { transform: scale(1.2); }
+    button { padding: 10px 20px; font-size: 16px; }
+    #result { margin-top: 20px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>LTL Linear Feet Calculator</h1>
+  <table id="palletTable">
+    <thead>
+      <tr>
+        <th>Length (in)</th>
+        <th>Width (in)</th>
+        <th>Quantity</th>
+        <th>Stackable</th>
+        <th>Remove</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button onclick="addRow()">Add Pallet</button>
+  <button onclick="calculateLinearFeet()">Calculate Linear Feet</button>
+  <div id="result"></div>
+
+  <script>
+    function addRow() {
+      const table = document.getElementById('palletTable').getElementsByTagName('tbody')[0];
+      const row = table.insertRow();
+      row.innerHTML = `
+        <td><input type="number" min="1" required></td>
+        <td><input type="number" min="1" required></td>
+        <td><input type="number" min="1" value="1" required></td>
+        <td><input type="checkbox"></td>
+        <td><button onclick="this.parentElement.parentElement.remove()">Remove</button></td>
+      `;
+    }
+
+    function calculateLinearFeet() {
+      const rows = document.querySelectorAll('#palletTable tbody tr');
+      let pallets = [];
+
+      rows.forEach(row => {
+        const inputs = row.querySelectorAll('input');
+        const length = parseFloat(inputs[0].value);
+        const width = parseFloat(inputs[1].value);
+        const quantity = parseInt(inputs[2].value);
+        const stackable = inputs[3].checked;
+
+        if (stackable) {
+          pallets.push({ length, width, stackable });
+        } else {
+          for (let i = 0; i < quantity; i++) {
+            pallets.push({ length, width, stackable });
+          }
+        }
+      });
+
+      pallets.sort((a, b) => b.width - a.width);
+
+      const maxWidth = 96;
+      let rowsUsed = [];
+
+      while (pallets.length > 0) {
+        let row = [];
+        let remainingWidth = maxWidth;
+
+        for (let i = pallets.length - 1; i >= 0; i--) {
+          const pallet = pallets[i];
+          if (pallet.stackable || pallet.width <= remainingWidth) {
+            row.push(pallet);
+            if (!pallet.stackable) remainingWidth -= pallet.width;
+            pallets.splice(i, 1);
+          }
+        }
+
+        rowsUsed.push(row);
+      }
+
+      const totalInches = rowsUsed.reduce((sum, row) => {
+        const maxLength = Math.max(...row.map(p => p.length));
+        return sum + maxLength;
+      }, 0);
+
+      const linearFeet = totalInches / 12;
+      document.getElementById('result').innerText = `Total Rows: ${rowsUsed.length}, Total Linear Feet: ${linearFeet.toFixed(2)}`;
+    }
+
+    // Add initial row
+    addRow();
+  </script>
+</body>
+</html>
